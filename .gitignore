@@ -1,0 +1,70 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+ENV/
+.python-version
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# --- Jupyter ---
+*.ipynb_checkpoints
+
+# --- Node / Frontend ---
+node_modules/
+dist/
+build/
+.vite/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# --- IDE / Editor ---
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# --- Secrets / Env ---
+.env
+.env.local
+.env.*.local
+*.pem
+kaggle.json
+
+# --- Datasets pesados ---
+# Mantenemos los CSVs originales de Fjelstul en datasets/ (son pequeños)
+# pero excluimos datasets externos pesados (>50MB) y datos procesados
+datasets/external/*
+!datasets/external/README.md
+!datasets/external/.gitkeep
+ml/data/processed/*
+!ml/data/processed/.gitkeep
+*.sqlite
+*.db
+*.parquet
+
+# --- Modelos entrenados (pesados, regenerables) ---
+ml/trained_models/*.pkl
+ml/trained_models/*.joblib
+ml/trained_models/*.onnx
+!ml/trained_models/.gitkeep
+
+# --- Docker ---
+.docker/
+
+# --- Logs ---
+logs/
+*.log
