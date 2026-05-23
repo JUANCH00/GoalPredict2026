@@ -1,0 +1,60 @@
+# docker-compose.yml — GoalPredict 2026
+#
+# Stack completo:
+#   - backend: FastAPI + uvicorn en :8765 (no expuesto al host por defecto
+#     en prod; en este paso lo dejamos expuesto para debug)
+#   - frontend: nginx sirviendo la SPA de Vite en :80, con reverse proxy
+#     de /api/* al servicio `backend` por DNS interno
+#
+# El usuario abre el navegador en http://localhost:8080 (frontend) y
+# todas las llamadas a /api/* las resuelve nginx hacia backend:8765.
+#
+# Uso:
+#   docker compose up --build      # construir e iniciar
+#   docker compose up -d           # daemon mode
+#   docker compose logs -f         # logs de todos los servicios
+#   docker compose down            # detener y eliminar contenedores
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: goalpredict-backend:0.1.0
+    container_name: goalpredict-backend
+    expose:
+      - "8765"
+    ports:
+      # Expuesto al host para debug directo. En prod real se podría quitar
+      # y dejar que solo el frontend lo acceda por la network interna.
+      - "8765:8765"
+    environment:
+      PYTHONIOENCODING: utf-8
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8765/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: goalpredict-frontend:0.1.0
+    container_name: goalpredict-frontend
+    ports:
+      # 8080 en el host para evitar conflictos con apps locales en :80
+      - "8080:80"
+    depends_on:
+      backend:
+        # Esperar a que el backend esté healthy antes de aceptar tráfico
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
