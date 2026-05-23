@@ -1,6 +1,8 @@
 """Configuración global del backend.
 
-Las rutas a los modelos y datasets se resuelven relativas a la raíz del repo.
+Todas las settings sensibles vienen de variables de entorno (cargadas
+automáticamente desde `.env` por pydantic-settings). Ver `.env.example`
+para la plantilla completa.
 """
 
 from __future__ import annotations
@@ -28,34 +30,33 @@ class Settings(BaseSettings):
     cors_origins: list[str] = [
         "http://localhost:5173",     # vite dev
         "http://localhost:3000",     # CRA dev
+        "http://localhost:8080",     # frontend nginx (compose)
         "http://127.0.0.1:5173",
     ]
 
     # --- JWT ---
-    # En producción mover esto a una variable de entorno (.env)
     jwt_secret_key: str = "change-me-in-production-this-is-not-a-real-secret"
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24  # 24h
 
-    # --- Bcrypt / auth demo ---
-    # Para este proyecto académico usamos una "base de datos" en memoria con
-    # 2 usuarios. En producción esto va a PostgreSQL.
-    demo_users: dict[str, dict] = {
-        "free_user": {
-            "username": "free_user",
-            # password: "free123"
-            "hashed_password": "$2b$12$fZzGJySowPIWK5O3P2IhtO1GGl.w8IuEprTGd8QHe6NtT.xjJchOe",
-            "tier": "free",
-        },
-        "premium_user": {
-            "username": "premium_user",
-            # password: "premium123"
-            "hashed_password": "$2b$12$03dfNnC/4AtBblUbuJvnSuCnejUt2irMkocNq3Npi0HUpJM9xdUP6",
-            "tier": "premium",
-        },
-    }
+    # --- Database ---
+    # Por defecto sqlite local (útil para tests / dev sin docker).
+    # En compose se sobreescribe vía DATABASE_URL apuntando a postgres.
+    database_url: str = f"sqlite:///{REPO_ROOT / 'backend' / 'goalpredict.sqlite'}"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    # --- Usuarios demo (se siembran solo si la tabla `users` está vacía) ---
+    demo_free_username: str = "free_user"
+    demo_free_password: str = "free123"
+    demo_premium_username: str = "premium_user"
+    demo_premium_password: str = "premium123"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        # Permitir, por ejemplo, JWT_SECRET_KEY o jwt_secret_key en .env
+        case_sensitive=False,
+    )
 
 
 @lru_cache(maxsize=1)

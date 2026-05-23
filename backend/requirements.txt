@@ -9,6 +9,10 @@ python-jose[cryptography]>=3.3.0
 bcrypt>=4.0.0
 python-multipart>=0.0.9        # form data para login
 
+# --- Persistencia ---
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9         # driver PostgreSQL (sync)
+
 # --- ML inference (compartido con el pipeline) ---
 joblib>=1.3.0
 scikit-learn>=1.4.0

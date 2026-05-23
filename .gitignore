@@ -42,8 +42,13 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+!.env.example
 *.pem
 kaggle.json
+
+# --- SQLite local (dev sin docker) ---
+*.sqlite
+*.sqlite-journal
 
 # --- Datasets pesados ---
 # Mantenemos los CSVs originales de Fjelstul en datasets/ (son pequeños)
