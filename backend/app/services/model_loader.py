@@ -10,9 +10,19 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
+import sys
 import joblib
 
 from ..core.config import get_settings
+
+# Asegurar que ml/src está en el path antes de cargar pickles que referencian
+# clases definidas allí (e.g. TeamAveragePredictor en baseline_wc2022_stats.pkl)
+_ML_DIR = get_settings().repo_root / "ml"
+if str(_ML_DIR) not in sys.path:
+    sys.path.insert(0, str(_ML_DIR))
+
+# Import explícito para que joblib pueda resolver la clase al deserializar
+from src.models.baselines import TeamAveragePredictor  # noqa: F401, E402
 
 
 @dataclass
@@ -59,7 +69,7 @@ def load_all_models() -> LoadedModels:
         try:
             return _load_pkl(path)
         except Exception as e:  # noqa: BLE001
-            print(f"⚠️  No se pudo cargar {name}: {e}")
+            print(f"[WARN] No se pudo cargar {name}: {e}")
             return {}
 
     return LoadedModels(
