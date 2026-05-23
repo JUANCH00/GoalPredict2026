@@ -1,21 +1,44 @@
 # docker-compose.yml — GoalPredict 2026
 #
 # Stack completo:
-#   - backend: FastAPI + uvicorn en :8765 (no expuesto al host por defecto
-#     en prod; en este paso lo dejamos expuesto para debug)
-#   - frontend: nginx sirviendo la SPA de Vite en :80, con reverse proxy
-#     de /api/* al servicio `backend` por DNS interno
+#   - db:       Postgres 16-alpine con volumen persistente
+#   - backend:  FastAPI + uvicorn en :8765, depende de db (healthy)
+#   - frontend: nginx sirviendo la SPA en :8080→:80, reverse proxy a backend
 #
-# El usuario abre el navegador en http://localhost:8080 (frontend) y
-# todas las llamadas a /api/* las resuelve nginx hacia backend:8765.
+# Las variables sensibles se leen de `.env` (ver `.env.example`).
 #
 # Uso:
+#   cp .env.example .env           # ajustar valores
 #   docker compose up --build      # construir e iniciar
-#   docker compose up -d           # daemon mode
-#   docker compose logs -f         # logs de todos los servicios
-#   docker compose down            # detener y eliminar contenedores
+#   docker compose down            # detener y eliminar (mantiene el volumen)
+#   docker compose down -v         # detener y borrar volumen (¡pierde datos!)
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: goalpredict-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-goalpredict}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: ${POSTGRES_DB:-goalpredict}
+      # Tunable para reducir RAM en máquinas modestas
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    # Puerto en host solo si quieres conectarte con un cliente externo
+    # (DBeaver, pgAdmin). Comenta esto en prod estricto.
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-goalpredict} -d ${POSTGRES_DB:-goalpredict}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
   backend:
     build:
       context: .
@@ -25,11 +48,21 @@ services:
     expose:
       - "8765"
     ports:
-      # Expuesto al host para debug directo. En prod real se podría quitar
-      # y dejar que solo el frontend lo acceda por la network interna.
       - "8765:8765"
     environment:
       PYTHONIOENCODING: utf-8
+      # En el container `db` es resoluble por DNS (nombre del servicio)
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-goalpredict}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-goalpredict}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production-this-is-not-a-real-secret}
+      JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES:-1440}
+      DEMO_FREE_USERNAME: ${DEMO_FREE_USERNAME:-free_user}
+      DEMO_FREE_PASSWORD: ${DEMO_FREE_PASSWORD:-free123}
+      DEMO_PREMIUM_USERNAME: ${DEMO_PREMIUM_USERNAME:-premium_user}
+      DEMO_PREMIUM_PASSWORD: ${DEMO_PREMIUM_PASSWORD:-premium123}
+    depends_on:
+      db:
+        condition: service_healthy
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8765/health"]
@@ -45,11 +78,9 @@ services:
     image: goalpredict-frontend:0.1.0
     container_name: goalpredict-frontend
     ports:
-      # 8080 en el host para evitar conflictos con apps locales en :80
       - "8080:80"
     depends_on:
       backend:
-        # Esperar a que el backend esté healthy antes de aceptar tráfico
         condition: service_healthy
     restart: unless-stopped
     healthcheck:
@@ -58,3 +89,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
+
+volumes:
+  pg_data:
+    name: goalpredict-pgdata

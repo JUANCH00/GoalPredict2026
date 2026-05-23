@@ -24,6 +24,7 @@ from .api.routes import history as history_router
 from .api.routes import predict as predict_router
 from .api.routes import teams as teams_router
 from .core.config import get_settings
+from .db.init_db import init_db
 from .services.feature_builder import get_feature_builder
 from .services.model_loader import load_all_models, set_models
 
@@ -36,6 +37,10 @@ async def lifespan(app: FastAPI):
     print(f"Models dir : {settings.models_dir}")
     print(f"Datasets   : {settings.datasets_dir}")
     print(f"Processed  : {settings.processed_data_dir}")
+    print(f"Database   : {settings.database_url.split('@')[-1] if '@' in settings.database_url else settings.database_url}")
+
+    print("\n[startup] Inicializando base de datos...")
+    init_db()
 
     print("\n[startup] Cargando modelos entrenados...")
     models = load_all_models()
