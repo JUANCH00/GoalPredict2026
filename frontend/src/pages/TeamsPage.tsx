@@ -1,9 +1,14 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
+import { Footer } from "../components/Footer";
+import { Icons, TeamMark } from "../components/design";
+import { getTeamMeta } from "../data/teams";
 import { useTeams } from "../hooks/useTeams";
 
+/** Listado de selecciones con sus clusters y stats. */
 export function TeamsPage() {
+  const navigate = useNavigate();
   const { teams, loading, error } = useTeams();
   const [q, setQ] = useState("");
 
@@ -14,57 +19,210 @@ export function TeamsPage() {
   }, [teams, q]);
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="font-display font-bold text-3xl text-slate-900">Selecciones</h1>
-      <p className="text-slate-600 mt-1">
-        {loading ? "Cargando..." : `${teams.length} selecciones perfiladas con sus clusters`}
-      </p>
-
-      <div className="mt-6 mb-4">
-        <input
-          type="text"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Buscar selección..."
-          className="w-full sm:max-w-sm px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-brand-500 focus:outline-none transition-colors"
-        />
-      </div>
-
-      {error && (
-        <div className="bg-rose-50 border border-rose-200 text-rose-800 rounded-lg p-4 mb-4">
-          {error}
+    <div className="page">
+      <div className="container" style={{ padding: "48px 32px 80px" }}>
+        <div className="row between mb-6" style={{ alignItems: "flex-end" }}>
+          <div>
+            <div className="uplabel mb-3">Catálogo de selecciones</div>
+            <h1
+              className="display"
+              style={{
+                fontSize: "clamp(32px, 4vw, 48px)",
+                margin: 0,
+                fontWeight: 500,
+              }}
+            >
+              {loading
+                ? "Cargando..."
+                : `${teams.length} selecciones perfiladas`}
+            </h1>
+            <p
+              style={{
+                marginTop: 10,
+                fontSize: 14,
+                color: "var(--ink-3)",
+                maxWidth: 540,
+              }}
+            >
+              Cada selección con su cluster de estilo (K-Means sobre features
+              agregadas) y promedios históricos de los últimos 8 años.
+            </p>
+          </div>
         </div>
-      )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {filtered.map((t) => (
-          <Link
-            key={t.name}
-            to={`/?prefill=${encodeURIComponent(t.name)}`}
-            className="bg-white border border-slate-200 rounded-xl p-4 hover:border-brand-400 hover:shadow-md transition-all"
+        <div style={{ marginBottom: 20 }}>
+          <input
+            type="text"
+            className="input"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Buscar selección..."
+            style={{ maxWidth: 360 }}
+          />
+        </div>
+
+        {error && (
+          <div
+            style={{
+              padding: 14,
+              background:
+                "color-mix(in oklab, var(--loss) 8%, var(--bg))",
+              border:
+                "1px solid color-mix(in oklab, var(--loss) 25%, var(--line))",
+              borderRadius: "var(--radius-md)",
+              color: "var(--loss)",
+              fontSize: 14,
+              marginBottom: 20,
+            }}
           >
-            <div className="flex items-start justify-between gap-2">
-              <div className="font-semibold text-slate-900">{t.name}</div>
-              {t.win_rate !== null && t.win_rate !== undefined && (
-                <span className="text-xs font-mono bg-slate-100 text-slate-700 px-2 py-0.5 rounded">
-                  {(t.win_rate * 100).toFixed(0)}%W
-                </span>
-              )}
-            </div>
-            {t.cluster_label && (
-              <div className="text-xs text-slate-500 mt-1 capitalize">{t.cluster_label}</div>
-            )}
-            <div className="text-xs text-slate-500 mt-2 grid grid-cols-2 gap-1">
-              <span>GF/p: {t.avg_goals_for?.toFixed(2) ?? "—"}</span>
-              <span>GA/p: {t.avg_goals_against?.toFixed(2) ?? "—"}</span>
-            </div>
-          </Link>
-        ))}
+            {error}
+          </div>
+        )}
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
+            gap: 12,
+          }}
+        >
+          {filtered.map((t) => {
+            const meta = getTeamMeta(t.name);
+            if (!meta) return null;
+            return (
+              <button
+                key={t.name}
+                onClick={() => {
+                  navigate(
+                    `/predict?team1=${encodeURIComponent(t.name)}&team2=Brazil`,
+                  );
+                }}
+                className="card"
+                style={{
+                  textAlign: "left",
+                  cursor: "pointer",
+                  fontFamily: "inherit",
+                  transition: "all .15s",
+                  padding: 18,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "var(--ink)";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "var(--line)";
+                  e.currentTarget.style.transform = "none";
+                }}
+              >
+                <div className="row between mb-3" style={{ alignItems: "center" }}>
+                  <div className="row gap-3" style={{ alignItems: "center" }}>
+                    <TeamMark team={meta} size={36} />
+                    <div className="col" style={{ gap: 2 }}>
+                      <div style={{ fontSize: 15, fontWeight: 500 }}>
+                        {meta.name}
+                      </div>
+                      <div
+                        className="mono"
+                        style={{
+                          fontSize: 10,
+                          color: "var(--ink-mute)",
+                          letterSpacing: "0.08em",
+                        }}
+                      >
+                        {meta.conf}
+                        {meta.rank < 999 && ` · #${meta.rank}`}
+                      </div>
+                    </div>
+                  </div>
+                  <Icons.arrow s={14} className="muted" />
+                </div>
+
+                {t.cluster_label && (
+                  <div className="mb-3">
+                    <span
+                      className="tag"
+                      style={{ fontSize: 10, textTransform: "capitalize" }}
+                    >
+                      {t.cluster_label}
+                    </span>
+                  </div>
+                )}
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: 8,
+                    paddingTop: 12,
+                    borderTop: "1px solid var(--line-soft)",
+                  }}
+                >
+                  <Mini
+                    label="Win"
+                    value={t.win_rate}
+                    fmt="pct"
+                  />
+                  <Mini label="GF/p" value={t.avg_goals_for} fmt="num" />
+                  <Mini label="GA/p" value={t.avg_goals_against} fmt="num" />
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        {!loading && filtered.length === 0 && (
+          <div
+            style={{
+              padding: "48px 0",
+              textAlign: "center",
+              color: "var(--ink-mute)",
+            }}
+          >
+            Sin resultados para "{q}"
+          </div>
+        )}
       </div>
 
-      {!loading && filtered.length === 0 && (
-        <div className="text-center py-12 text-slate-500">Sin resultados para "{q}"</div>
-      )}
+      <Footer />
+    </div>
+  );
+}
+
+function Mini({
+  label,
+  value,
+  fmt,
+}: {
+  label: string;
+  value: number | null | undefined;
+  fmt: "pct" | "num";
+}) {
+  const display =
+    value == null
+      ? "—"
+      : fmt === "pct"
+      ? `${(value * 100).toFixed(0)}%`
+      : value.toFixed(2);
+  return (
+    <div>
+      <div
+        className="mono tabnum"
+        style={{ fontSize: 14, fontWeight: 500, color: "var(--ink)" }}
+      >
+        {display}
+      </div>
+      <div
+        className="mono"
+        style={{
+          fontSize: 9,
+          color: "var(--ink-mute)",
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          marginTop: 2,
+        }}
+      >
+        {label}
+      </div>
     </div>
   );
 }
