@@ -1,112 +1,426 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { Icons } from "../components/design";
 import { useAuth } from "../context/AuthContext";
+import * as api from "../services/api";
 
+type Tab = "login" | "register";
+
+/** Auth — login + registro con panel editorial oscuro al lado. */
 export function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [tab, setTab] = useState<Tab>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [tier, setTier] = useState<"free" | "premium">("free");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    if (username.trim().length < 3) {
+      setError("El usuario debe tener al menos 3 caracteres");
+      return;
+    }
+    if (password.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres");
+      return;
+    }
+    setLoading(true);
     try {
+      if (tab === "register") {
+        await fetch("/api/v1/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, password, tier }),
+        }).then(async (r) => {
+          if (!r.ok) {
+            const body = await r.json().catch(() => ({}));
+            throw new Error(body.detail ?? `${r.status} ${r.statusText}`);
+          }
+        });
+      }
       await login(username, password);
-      navigate("/");
+      navigate("/predict");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error de autenticación");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const setDemo = (u: string, p: string) => {
-    setUsername(u);
-    setPassword(p);
-  };
+  async function demoLogin(plan: "free" | "premium") {
+    setError(null);
+    setLoading(true);
+    try {
+      const creds =
+        plan === "premium"
+          ? { u: "premium_user", p: "premium123" }
+          : { u: "free_user", p: "free123" };
+      await login(creds.u, creds.p);
+      navigate("/predict");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Error con demo");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const heading =
+    tab === "login" ? (
+      <>
+        Bienvenido
+        <br />
+        <span className="serif-it" style={{ color: "var(--accent)" }}>
+          de vuelta.
+        </span>
+      </>
+    ) : (
+      <>
+        Empieza a
+        <br />
+        <span className="serif-it" style={{ color: "var(--accent)" }}>
+          predecir.
+        </span>
+      </>
+    );
 
   return (
-    <div className="max-w-md mx-auto px-4 py-12">
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-8">
-        <h1 className="font-display font-bold text-2xl text-slate-900 text-center">
-          Iniciar sesión
-        </h1>
-        <p className="text-sm text-slate-500 text-center mt-1">
-          Accede a las predicciones premium
-        </p>
-
-        {error && (
-          <div className="mt-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-lg px-4 py-2.5 text-sm">
-            {error}
+    <div
+      className="page auth-grid"
+      style={{
+        minHeight: "calc(100vh - 60px)",
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+      }}
+    >
+      {/* IZQUIERDA — formulario */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 32,
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: 380 }}>
+          <div className="uplabel mb-3">
+            {tab === "login" ? "Iniciar sesión" : "Crear cuenta"}
           </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label htmlFor="username" className="block text-sm font-medium text-slate-700 mb-1">
-              Usuario
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
-              className="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-brand-500 focus:outline-none transition-colors"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-              Contraseña
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full px-4 py-2.5 border-2 border-slate-200 rounded-xl focus:border-brand-500 focus:outline-none transition-colors"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || !username || !password}
-            className="w-full bg-brand-600 hover:bg-brand-700 disabled:bg-slate-300 text-white font-semibold py-3 rounded-xl transition-colors"
+          <h1
+            className="display"
+            style={{ fontSize: 44, margin: 0, fontWeight: 500 }}
           >
-            {loading ? "Entrando..." : "Iniciar sesión"}
-          </button>
-        </form>
+            {heading}
+          </h1>
 
-        <div className="mt-6 pt-5 border-t border-slate-200">
-          <p className="text-xs text-slate-500 mb-2 text-center">Cuentas demo:</p>
-          <div className="grid grid-cols-2 gap-2">
+          {/* Tab switcher */}
+          <div
+            className="row"
+            style={{
+              marginTop: 32,
+              gap: 0,
+              padding: 4,
+              background: "var(--bg-soft)",
+              borderRadius: "var(--radius-md)",
+              border: "1px solid var(--line)",
+              width: "fit-content",
+            }}
+          >
+            {(["login", "register"] as const).map((t) => (
+              <button
+                key={t}
+                onClick={() => {
+                  setTab(t);
+                  setError(null);
+                }}
+                style={{
+                  padding: "8px 14px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  border: 0,
+                  borderRadius: 4,
+                  background: tab === t ? "var(--bg-card)" : "transparent",
+                  color: tab === t ? "var(--ink)" : "var(--ink-mute)",
+                  cursor: "pointer",
+                  boxShadow: tab === t ? "0 1px 2px rgba(0,0,0,.04)" : "none",
+                  fontFamily: "inherit",
+                }}
+              >
+                {t === "login" ? "Entrar" : "Crear cuenta"}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleSubmit} style={{ marginTop: 24 }}>
+            <div className="mb-4">
+              <label
+                className="uplabel"
+                style={{ display: "block", marginBottom: 8 }}
+              >
+                Usuario
+              </label>
+              <input
+                className="input"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="ej. juancho_uptc"
+                autoComplete="username"
+              />
+            </div>
+            <div className="mb-4">
+              <label
+                className="uplabel"
+                style={{ display: "block", marginBottom: 8 }}
+              >
+                Contraseña
+              </label>
+              <input
+                className="input"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                autoComplete={
+                  tab === "login" ? "current-password" : "new-password"
+                }
+              />
+            </div>
+
+            {tab === "register" && (
+              <div className="mb-4">
+                <label
+                  className="uplabel"
+                  style={{ display: "block", marginBottom: 8 }}
+                >
+                  Plan
+                </label>
+                <div
+                  className="row gap-2"
+                  style={{
+                    padding: 4,
+                    background: "var(--bg-soft)",
+                    borderRadius: "var(--radius-md)",
+                    border: "1px solid var(--line)",
+                  }}
+                >
+                  {(["free", "premium"] as const).map((p) => (
+                    <button
+                      type="button"
+                      key={p}
+                      onClick={() => setTier(p)}
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        border: 0,
+                        borderRadius: 4,
+                        background:
+                          tier === p ? "var(--bg-card)" : "transparent",
+                        color: tier === p ? "var(--ink)" : "var(--ink-mute)",
+                        cursor: "pointer",
+                        fontFamily: "inherit",
+                      }}
+                    >
+                      {p === "free" ? "Free" : "Premium ★"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {error && (
+              <div
+                style={{
+                  padding: 10,
+                  marginBottom: 12,
+                  fontSize: 13,
+                  color: "var(--loss)",
+                  background:
+                    "color-mix(in oklab, var(--loss) 8%, var(--bg))",
+                  borderRadius: 4,
+                  border:
+                    "1px solid color-mix(in oklab, var(--loss) 25%, var(--line))",
+                }}
+              >
+                {error}
+              </div>
+            )}
+
             <button
-              type="button"
-              onClick={() => setDemo("free_user", "free123")}
-              className="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 py-2 px-3 rounded-lg transition-colors"
+              type="submit"
+              className="btn accent lg"
+              style={{ width: "100%", justifyContent: "center" }}
+              disabled={loading}
             >
-              <div className="font-semibold">Free</div>
-              <div className="text-slate-500">free_user / free123</div>
+              {loading
+                ? "Procesando..."
+                : tab === "login"
+                ? "Entrar"
+                : "Crear cuenta"}
+              {!loading && <Icons.arrow s={14} />}
             </button>
-            <button
-              type="button"
-              onClick={() => setDemo("premium_user", "premium123")}
-              className="text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 py-2 px-3 rounded-lg transition-colors"
-            >
-              <div className="font-semibold">★ Premium</div>
-              <div className="text-amber-800">premium_user / premium123</div>
-            </button>
+          </form>
+
+          <div
+            style={{
+              marginTop: 24,
+              padding: "16px 0",
+              borderTop: "1px solid var(--line)",
+            }}
+          >
+            <div className="uplabel mb-3">Probar sin registro</div>
+            <div className="row gap-2">
+              <button
+                className="btn sm ghost"
+                onClick={() => demoLogin("free")}
+                disabled={loading}
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                Demo gratuita
+              </button>
+              <button
+                className="btn sm"
+                onClick={() => demoLogin("premium")}
+                disabled={loading}
+                style={{ flex: 1, justifyContent: "center" }}
+              >
+                Demo Premium
+              </button>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* DERECHA — pieza editorial */}
+      <div
+        className="auth-side"
+        style={{
+          background: "var(--ink)",
+          color: "var(--bg)",
+          padding: 48,
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "space-between",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        <div className="row gap-3">
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              background: "var(--bg)",
+              borderRadius: "50%",
+              position: "relative",
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                position: "absolute",
+                inset: 4,
+                border: "1px solid var(--ink)",
+                borderRadius: "50%",
+              }}
+            />
+          </div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            GoalPredict <span className="serif-it">'26</span>
+          </div>
+        </div>
+
+        <div>
+          <div
+            className="uplabel mb-4"
+            style={{ color: "var(--accent)" }}
+          >
+            Mundial 2026 · USA · CAN · MEX
+          </div>
+          <div
+            className="display"
+            style={{
+              fontSize: "clamp(40px, 5vw, 72px)",
+              fontWeight: 500,
+              lineHeight: 0.95,
+            }}
+          >
+            104 partidos.
+            <br />
+            <span
+              className="serif-it"
+              style={{ color: "var(--accent)" }}
+            >
+              48
+            </span>{" "}
+            selecciones.
+            <br />
+            Una sola plataforma.
+          </div>
+          <div
+            style={{
+              marginTop: 28,
+              maxWidth: 360,
+              fontSize: 15,
+              lineHeight: 1.55,
+              color: "var(--stone)",
+            }}
+          >
+            Acceso al modelo de clasificación gratuito y a estadísticas
+            premium con detalle por tiempo, tarjetas, corners y posesión.
+          </div>
+        </div>
+
+        <div
+          className="row gap-6"
+          style={{
+            paddingTop: 24,
+            borderTop: "1px solid color-mix(in oklab, var(--bg) 14%, transparent)",
+          }}
+        >
+          {[
+            { n: "49k", l: "Partidos" },
+            { n: "57%", l: "Accuracy" },
+            { n: "<3s", l: "Respuesta" },
+          ].map((m) => (
+            <div key={m.l}>
+              <div
+                className="display mono tabnum"
+                style={{
+                  fontSize: 32,
+                  fontWeight: 500,
+                  letterSpacing: "-0.04em",
+                }}
+              >
+                {m.n}
+              </div>
+              <div className="uplabel" style={{ color: "var(--stone)" }}>
+                {m.l}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* responsive: ocultar panel derecho en móvil */}
+      <style>{`
+        @media (max-width: 860px) {
+          .auth-grid { grid-template-columns: 1fr !important; }
+          .auth-side { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

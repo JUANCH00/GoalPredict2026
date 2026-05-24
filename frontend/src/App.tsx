@@ -5,6 +5,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { HomePage } from "./pages/HomePage";
 import { LoginPage } from "./pages/LoginPage";
 import { PredictionPage } from "./pages/PredictionPage";
+import { PricingPage } from "./pages/PricingPage";
 import { TeamsPage } from "./pages/TeamsPage";
 
 export default function App() {
@@ -17,6 +18,7 @@ export default function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/predict" element={<PredictionPage />} />
             <Route path="/teams" element={<TeamsPage />} />
+            <Route path="/pricing" element={<PricingPage />} />
             <Route path="/login" element={<LoginPage />} />
           </Routes>
         </main>
