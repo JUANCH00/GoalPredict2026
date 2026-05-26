@@ -214,7 +214,7 @@ export function PricingPage() {
               return (
                 <div
                   key={p.id}
-                  className="card"
+                  className="card pricing-card"
                   style={{
                     padding: 32,
                     borderColor: p.featured ? "var(--ink)" : "var(--line)",

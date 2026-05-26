@@ -251,9 +251,114 @@ body {
   gap: 10px;
   align-items: center;
 }
+
+/* --- Hamburger menu (mobile) -------------------------------------------- */
+.nav-burger {
+  display: none;
+  margin-left: auto;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--ink);
+  transition: border-color 0.15s, background 0.15s;
+}
+.nav-burger:hover {
+  border-color: var(--ink);
+  background: var(--bg-soft);
+}
+.burger-icon {
+  position: relative;
+  display: inline-block;
+  width: 18px;
+  height: 14px;
+}
+.burger-icon span {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 1.5px;
+  background: var(--ink);
+  border-radius: 1px;
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 0.15s, top 0.25s;
+}
+.burger-icon span:nth-child(1) { top: 0; }
+.burger-icon span:nth-child(2) { top: 50%; transform: translateY(-50%); }
+.burger-icon span:nth-child(3) { top: calc(100% - 1.5px); }
+.burger-icon.open span:nth-child(1) {
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+}
+.burger-icon.open span:nth-child(2) {
+  opacity: 0;
+}
+.burger-icon.open span:nth-child(3) {
+  top: 50%;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+/* Mobile menu panel — slide-down debajo del nav */
+.nav-mobile {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 25;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.2s, transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+  overflow-y: auto;
+  display: none;
+}
+.nav-mobile.open {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.nav-mobile-inner {
+  padding: 28px 24px 40px;
+  max-width: var(--maxw);
+  margin: 0 auto;
+}
+.nav-mobile-link {
+  display: block;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+  letter-spacing: -0.01em;
+  transition: color 0.15s;
+}
+.nav-mobile-link:hover {
+  color: var(--accent);
+}
+.nav-mobile-link[data-active="true"] {
+  color: var(--accent);
+}
+
 @media (max-width: 760px) {
   .nav-links {
     display: none;
+  }
+  .nav-right {
+    display: none;
+  }
+  .nav-burger {
+    display: inline-flex;
+  }
+  .nav-mobile {
+    display: block;
   }
 }
 
@@ -418,6 +523,107 @@ body {
 }
 .page {
   animation: fadeUp 0.35s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+/* ---------- Dashboard responsive ---------------------------------------- */
+
+/* Selector de equipos: desktop 1fr/60px/1fr, mobile en columna */
+.team-selector-grid {
+  display: grid;
+  grid-template-columns: 1fr 60px 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 32px;
+}
+@media (max-width: 720px) {
+  .team-selector-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .team-selector-grid > button[aria-label],
+  .team-selector-grid > .swap-btn {
+    justify-self: center;
+  }
+}
+
+/* Big team showdown: desktop 1fr auto 1fr, mobile stack */
+.team-showdown {
+  padding: 40px 32px 32px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 24px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .team-showdown {
+    grid-template-columns: 1fr;
+    padding: 28px 20px 24px;
+    gap: 20px;
+    text-align: center;
+  }
+  .team-showdown .team-column {
+    flex-direction: row !important;
+    justify-content: center;
+    text-align: center !important;
+  }
+  .team-showdown .team-column.reverse {
+    flex-direction: row !important;
+  }
+  .team-showdown .team-column > div:last-child {
+    text-align: center !important;
+  }
+  .team-showdown .vs-divider {
+    order: initial;
+  }
+}
+
+/* Card padding shrink */
+@media (max-width: 720px) {
+  .dashboard-card-header {
+    padding: 14px 18px !important;
+  }
+  .dashboard-card-body {
+    padding: 0 20px 24px !important;
+  }
+}
+
+/* ---------- H2H tabla → cards en mobile -------------------------------- */
+.h2h-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 80px 1fr 180px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 13px;
+}
+@media (max-width: 720px) {
+  .h2h-row {
+    grid-template-columns: 1fr auto 1fr;
+    grid-template-areas:
+      "meta meta meta"
+      "left score right"
+      "tour tour tour";
+    gap: 8px 12px;
+    row-gap: 6px;
+    padding: 14px 0;
+  }
+  .h2h-row > .h2h-date { grid-area: meta; font-size: 11px; }
+  .h2h-row > .h2h-left { grid-area: left; justify-content: flex-start !important; }
+  .h2h-row > .h2h-score { grid-area: score; }
+  .h2h-row > .h2h-right { grid-area: right; justify-content: flex-end !important; }
+  .h2h-row > .h2h-tournament {
+    grid-area: tour;
+    text-align: left !important;
+    font-size: 10.5px;
+  }
+}
+
+/* ---------- Pricing card padding shrink -------------------------------- */
+@media (max-width: 720px) {
+  .pricing-card {
+    padding: 24px 20px !important;
+  }
 }
 
 /* ---------- footer ------------------------------------------------------ */
