@@ -145,15 +145,7 @@ export function PredictionPage() {
         </div>
 
         {/* SELECTOR ------------------------------------------------- */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 60px 1fr",
-            gap: 16,
-            alignItems: "center",
-            marginBottom: 32,
-          }}
-        >
+        <div className="team-selector-grid">
           <TeamPicker
             value={team1}
             onChange={setTeam1}
@@ -176,6 +168,7 @@ export function PredictionPage() {
         <div className="card" style={{ padding: 0, overflow: "hidden" }}>
           {/* header */}
           <div
+            className="dashboard-card-header"
             style={{
               padding: "16px 24px",
               borderBottom: "1px solid var(--line)",
@@ -222,22 +215,14 @@ export function PredictionPage() {
           </div>
 
           {/* big team showdown */}
-          <div
-            style={{
-              padding: "40px 32px 32px",
-              display: "grid",
-              gridTemplateColumns: "1fr auto 1fr",
-              gap: 24,
-              alignItems: "center",
-            }}
-          >
+          <div className="team-showdown">
             <TeamColumn
               meta={metaA}
               side="a"
               prob={free?.probabilities.home_win}
               computing={phase === "computing"}
             />
-            <div className="col center" style={{ gap: 4 }}>
+            <div className="col center vs-divider" style={{ gap: 4 }}>
               <div
                 className="display mono tabnum"
                 style={{
@@ -262,7 +247,7 @@ export function PredictionPage() {
           </div>
 
           {/* probability bar */}
-          <div style={{ padding: "0 32px 32px" }}>
+          <div className="dashboard-card-body" style={{ padding: "0 32px 32px" }}>
             {phase === "computing" && <ComputingBar />}
             {phase === "error" && (
               <div
@@ -486,6 +471,7 @@ function TeamColumn({
   const textAlign: "left" | "right" = reverse ? "right" : "left";
   return (
     <div
+      className={`team-column${reverse ? " reverse" : ""}`}
       style={{
         display: "flex",
         flexDirection: flexDir,
@@ -1198,30 +1184,21 @@ function H2HTab({
               const team2Score = t1IsHome ? g.away_score : g.home_score;
               const team1Won = team1Score > team2Score;
               const team2Won = team2Score > team1Score;
+              const isLast = i >= 9 || i === h2h.length - 1;
               return (
                 <div
                   key={i}
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "100px 1fr 80px 1fr 180px",
-                    gap: 12,
-                    alignItems: "center",
-                    padding: "12px 0",
-                    borderBottom:
-                      i < 9 && i < h2h.length - 1
-                        ? "1px solid var(--line-soft)"
-                        : "none",
-                    fontSize: 13,
-                  }}
+                  className="h2h-row"
+                  style={isLast ? { borderBottom: "none" } : undefined}
                 >
                   <div
-                    className="mono"
+                    className="mono h2h-date"
                     style={{ color: "var(--ink-mute)", fontSize: 12 }}
                   >
                     {g.date}
                   </div>
                   <div
-                    className="row gap-3"
+                    className="row gap-3 h2h-left"
                     style={{
                       alignItems: "center",
                       justifyContent: "flex-end",
@@ -1238,7 +1215,7 @@ function H2HTab({
                     <TeamMark team={metaA} size={22} />
                   </div>
                   <div
-                    className="display mono tabnum"
+                    className="display mono tabnum h2h-score"
                     style={{
                       fontSize: 18,
                       fontWeight: 500,
@@ -1264,7 +1241,10 @@ function H2HTab({
                       {team2Score}
                     </span>
                   </div>
-                  <div className="row gap-3" style={{ alignItems: "center" }}>
+                  <div
+                    className="row gap-3 h2h-right"
+                    style={{ alignItems: "center" }}
+                  >
                     <TeamMark team={metaB} size={22} />
                     <span
                       style={{
@@ -1276,7 +1256,7 @@ function H2HTab({
                     </span>
                   </div>
                   <div
-                    className="mono"
+                    className="mono h2h-tournament"
                     style={{
                       fontSize: 11,
                       color: "var(--ink-mute)",
