@@ -53,14 +53,14 @@ kaggle.json
 # --- Datasets pesados ---
 # Mantenemos los CSVs originales de Fjelstul en datasets/ (son pequeños)
 # pero excluimos datasets externos pesados (>50MB) y datos procesados
-datasets/external/*
-!datasets/external/README.md
-!datasets/external/.gitkeep
-ml/data/processed/*
-!ml/data/processed/.gitkeep
-*.sqlite
-*.db
-*.parquet
+# datasets/external/*
+# !datasets/external/README.md
+# !datasets/external/.gitkeep
+# ml/data/processed/*
+# !ml/data/processed/.gitkeep
+# *.sqlite
+# *.db
+# *.parquet
 
 # --- Modelos entrenados (pesados, regenerables) ---
 # ml/trained_models/*.pkl
