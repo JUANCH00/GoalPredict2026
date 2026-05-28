@@ -63,10 +63,10 @@ ml/data/processed/*
 *.parquet
 
 # --- Modelos entrenados (pesados, regenerables) ---
-ml/trained_models/*.pkl
-ml/trained_models/*.joblib
-ml/trained_models/*.onnx
-!ml/trained_models/.gitkeep
+# ml/trained_models/*.pkl
+# ml/trained_models/*.joblib
+# ml/trained_models/*.onnx
+# !ml/trained_models/.gitkeep
 
 # --- Docker ---
 .docker/
